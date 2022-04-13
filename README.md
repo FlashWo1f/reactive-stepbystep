@@ -22,5 +22,23 @@ effect(() => {
 基于这个需求，我们需要将副作用函数执行前，将与之关联的依赖集合删除。当副作用函数执行完毕后，会重新根据引用建立联系。
 从这个 Step 开始，就比较绕了，所以多看多写几次
 这里还涉及到 Set 的遍历时 add + delete 带来的无限循环问题
+5. Step5: 
+嵌套的 effect & effect 栈
+在 Vue3 中呢，组件的渲染 render() 就是在 effect 中调用的，那么嵌套组件就会涉及到 effect 的嵌套调用, 所以我们要把 effect 设计成能嵌套的。
+我们就需要修改 activeEffect 的架构 并且引入副作用栈 effectStack
+```js
+const effectFn = () => {
+  // 调用 cleanup 清除
+  cleanup(effectFn)
+  activeEffect = effectFn
+  // 在调用前将当前副作用压入栈
+  effectStack.push(activeEffect)
+  fn()
+  // 执行完后出栈
+  effectStack.pop()
+  // 将 activeEffect 还原之前外层的值
+  activeEffect = effectStack[effectStack.length - 1]
+}
+```
 ## 参考
 《Vue.js 设计与实现》

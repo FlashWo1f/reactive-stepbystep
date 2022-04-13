@@ -1,7 +1,6 @@
 const bucket = new WeakMap()
 
 let activeEffect
-const effectStack = []
 
 const data = {
   foo: true,
@@ -13,13 +12,7 @@ function effect(fn) {
     // 调用 cleanup 清除
     cleanup(effectFn)
     activeEffect = effectFn
-    // 在调用前将当前副作用压入栈
-    effectStack.push(activeEffect)
     fn()
-    // 执行完后出栈
-    effectStack.pop()
-    // 将 activeEffect 还原之前外层的值
-    activeEffect = effectStack[effectStack.length - 1]
   }
   effectFn.deps = []
   effectFn()
@@ -77,10 +70,13 @@ effect(() => {
     console.log('effectFn2 run!')
     temp2 = obj.bar
   })
+
   temp1 = obj.foo
 })
 
 
 setTimeout(() => {
+  // 这里修改了 foo 的属性 反而触发了 effectFn2 的打印 
+  // 问题出在用 activeEffect 全局变量上 这意味着同一时刻副作用函数只能有一个, 如果内层有 副作用嵌套的话就会覆盖 activeEffect 的值
   obj.foo = false
 }, 1000)
