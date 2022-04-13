@@ -40,7 +40,7 @@ const effectFn = () => {
   activeEffect = effectStack[effectStack.length - 1]
 }
 ```
-6. 避免无线递归循环
+6. Step6: 避免无线递归循环
 现在我们的 effect 中如果有同时读写操作，就会陷入无限循环
 ```js
 effect(() => {

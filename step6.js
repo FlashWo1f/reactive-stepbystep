@@ -77,6 +77,8 @@ function trigger(target, key) {
 
 
 effect(() => {
+  document.body.innerText = obj.foo
   obj.foo++
 })
 
+obj.foo++
