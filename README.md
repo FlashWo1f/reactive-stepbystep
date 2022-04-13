@@ -40,5 +40,13 @@ const effectFn = () => {
   activeEffect = effectStack[effectStack.length - 1]
 }
 ```
+6. 避免无线递归循环
+现在我们的 effect 中如果有同时读写操作，就会陷入无限循环
+```js
+effect(() => {
+  obj.foo++
+})
+```
+解决办法很简单：trigger 时判断要执行的副作用函数是不是和 activeEffect 相同，相同则不执行
 ## 参考
 《Vue.js 设计与实现》
