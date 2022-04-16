@@ -58,5 +58,10 @@ effect(() => {
   - computed 依赖项没改变但多次计算 —— 缓存值
   - 依赖项改变后没更新 —— 调度器中让值 dirty
   - effect 中引用 computed 时，computed 改变没有触发外部 effect 更新 —— 在 computed 内部手动 track 和 trigger 外部 effect
+9. watch 的实现原理
+本质：观测一个响应式数据，当数据发生变化时通知并执行相应的回调函数
+`traverse` 方法遍历传入观测的所有属性，收集依赖到 watch 内部的 effect。
+注意新老值的交替。
+目前实现的一个小 bug 就是: 当 watch 的是复杂数据类型的话，oldValue 和 newValue 是一样的（可能需要深克隆一下）。
 ## 参考
 《Vue.js 设计与实现》
