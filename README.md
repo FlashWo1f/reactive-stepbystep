@@ -63,5 +63,6 @@ effect(() => {
 `traverse` 方法遍历传入观测的所有属性，收集依赖到 watch 内部的 effect。
 注意新老值的交替。
 目前实现的一个小 bug 就是: 当 watch 的是复杂数据类型的话，oldValue 和 newValue 是一样的（可能需要深克隆一下）。
+https://github1s.com/vuejs/core/blob/HEAD/packages/runtime-core/src/apiWatch.ts
 ## 参考
 《Vue.js 设计与实现》
