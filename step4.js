@@ -31,7 +31,7 @@ const data = {
 // 追踪属性数据
 function track(target, key) {
   // 当前没有副作用函数 则直接返回
-  if (!activeEffect) return target[key]
+  if (!activeEffect) return
   // 根据 bucket 和 target 获取 depsMap，它也是 Map 类型: key --> effects
   let depsMap = bucket.get(target)
   if (!depsMap) {
