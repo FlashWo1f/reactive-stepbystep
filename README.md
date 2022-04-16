@@ -50,5 +50,13 @@ effect(() => {
 解决办法很简单：trigger 时判断要执行的副作用函数是不是和 activeEffect 相同，相同则不执行
 7. Step7: 调度执行.
 可调度性是响应式系统中非常重要的特性。所谓可调度性：是指 trigger 时触发副作用函数的执行时，有能力决定`副作用函数执行的时机、次数以及方式`。具体体现：用一个微任务队列装载要执行的任务，去重且一次执行。这个功能点与 Vue.js 连续多次修改响应式数据但只会触发一次相似，Vuejs 中实现了一个更加完善的调度器，思路与这里差不多。
+8. 计算属性 computed 与 lazy
+以上，已经有了 effect/options/scheduler/track/trigger，我们可以结合起来实现 Vuejs 中非常重要的且特色的功能 —— computed
+有以下问题/解决
+  - 延迟执行 —— options.lazy 懒执行
+  - computed 返回一个值 —— effect 函数返回值 
+  - computed 依赖项没改变但多次计算 —— 缓存值
+  - 依赖项改变后没更新 —— 调度器中让值 dirty
+  - effect 中引用 computed 时，computed 改变没有触发外部 effect 更新 —— 在 computed 内部手动 track 和 trigger 外部 effect
 ## 参考
 《Vue.js 设计与实现》
