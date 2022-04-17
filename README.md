@@ -59,10 +59,50 @@ effect(() => {
   - 依赖项改变后没更新 —— 调度器中让值 dirty
   - effect 中引用 computed 时，computed 改变没有触发外部 effect 更新 —— 在 computed 内部手动 track 和 trigger 外部 effect
 9. watch 的实现原理
-本质：观测一个响应式数据，当数据发生变化时通知并执行相应的回调函数
+本质：观测一个响应式数据，当数据发生变化时通知并执行相应的回调函数。利用了副作用函数重新执行时的可调度性。
 `traverse` 方法遍历传入观测的所有属性，收集依赖到 watch 内部的 effect。
 注意新老值的交替。
 目前实现的一个小 bug 就是: 当 watch 的是复杂数据类型的话，oldValue 和 newValue 是一样的（可能需要深克隆一下）。
 https://github1s.com/vuejs/core/blob/HEAD/packages/runtime-core/src/apiWatch.ts
+10. watch-immediate 与过期的副作用
+immediate 就是我们平常开发常用的选项
+过期的副作用是指在 watch 中的回调函数中有异步的结果，新派发的回调会使旧派发的回调失效，避免新结果早于旧结果而导致的结果异常问题。
+问题重现:
+```js
+watch(
+  () => obj.bar,
+  (val, oldValue) => {
+    let delay
+    if (val === 3) {
+      delay = 500
+    } else {
+      delay = 300
+    }
+    delayResult(val, delay).then(res => {
+      obj.foo = res
+    })
+  },
+)
+
+watch(
+  () => obj.foo,
+  val => {
+    // should be 4, but got 3
+    console.log('obj.foo async change', val)
+  },
+)
+
+obj.bar++
+obj.bar++
+
+function delayResult(value, delay) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(value)
+    }, delay)
+  })
+}
+```
+解决：暴露一个时机，在回调函数执行之前，有限执行用户通过 onInvalidate 注册的过期回调，这样，用户就有机会在过期回调中将上一次的副作用标记为“过期”，解决竞态问题
 ## 参考
 《Vue.js 设计与实现》
