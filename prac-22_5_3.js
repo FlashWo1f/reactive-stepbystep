@@ -38,6 +38,23 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0
 }
 
+const jobQueue = new Set()
+
+// 使用一个标记代表是否正在刷新队列 一次 isFlushing 可以视为一次批量更新
+let isFlushing = false
+function flushJob() {
+  if (isFlushing) {
+    return 
+  }
+  isFlushing = true
+  // 通过一个微任务和同步任务的时间差来收集同一时间执行的任务，相同任务则去重
+  Promise.resolve().then(res => {
+    jobQueue.forEach(job => job())
+  }).finally(() => {
+    isFlushing = false
+  })
+}
+
 const data = {
   ok: true,
   foo: 2,
@@ -138,6 +155,21 @@ function trigger(target, key) {
 // console.log('later')
 
 // demo: 批量更新
+
+effect(
+  () => {
+    console.log(obj.foo)
+  },
+  {
+    scheduler(fn) {
+      jobQueue.add(fn)
+      flushJob()
+    }
+  }
+)
+obj.foo++
+obj.foo++
+obj.foo++
 
 
 
