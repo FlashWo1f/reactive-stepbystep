@@ -1,3 +1,8 @@
+## 相关概念
+
+1. 副作用函数：会产生副作用的函数。比如函数内改变 DOM 或者外部的变量。
+2. 响应式数据：副作用函数 effect 设置元素的 innerText 为 obj.text, 当 obj.text 的值发生变化，effect 副作用函数重新执行，那么这个 obj 我们称为响应式数据。
+
 ## 一步一步建立响应式
 1. Step1: 
   - 简单的利用 `Proxy` 的 `get` `set` 配合 `effect` 函数实现简单的响应式 DEMO
@@ -25,7 +30,7 @@ effect(() => {
 5. Step5: 
 嵌套的 effect & effect 栈
 在 Vue3 中呢，组件的渲染 render() 就是在 effect 中调用的，那么嵌套组件就会涉及到 effect 的嵌套调用, 所以我们要把 effect 设计成能嵌套的。
-我们就需要修改 activeEffect 的架构 并且引入副作用栈 effectStack
+我们就需要修改 activeEffect 的架构 并且引入副作用栈 effectStack，因为函数调用也是栈的形式。
 ```js
 const effectFn = () => {
   // 调用 cleanup 清除
@@ -47,9 +52,10 @@ effect(() => {
   obj.foo++
 })
 ```
-解决办法很简单：trigger 时判断要执行的副作用函数是不是和 activeEffect 相同，相同则不执行
+解决办法很简单：trigger 时判断要执行的副作用函数是不是和 activeEffect 相同，相同则不执行。缺陷就是未及时响应这一步值的变化
 7. Step7: 调度执行.
 可调度性是响应式系统中非常重要的特性。所谓可调度性：是指 trigger 时触发副作用函数的执行时，有能力决定`副作用函数执行的时机、次数以及方式`。具体体现：用一个微任务队列装载要执行的任务，去重且一次执行。这个功能点与 Vue.js 连续多次修改响应式数据但只会触发一次相似，Vuejs 中实现了一个更加完善的调度器，思路与这里差不多。
+批量更新？[https://www.zhihu.com/search?type=content&q=Vue%20%E6%89%B9%E9%87%8F%E6%9B%B4%E6%96%B0]
 8. 计算属性 computed 与 lazy
 以上，已经有了 effect/options/scheduler/track/trigger，我们可以结合起来实现 Vuejs 中非常重要的且特色的功能 —— computed
 有以下问题/解决
