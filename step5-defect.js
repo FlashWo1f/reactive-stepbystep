@@ -1,0 +1,92 @@
+const bucket = new WeakMap()
+
+let activeEffect
+const effectStack = []
+
+const data = {
+  foo: true,
+  bar: true,
+}
+
+function effect(fn) {
+  const effectFn = () => {
+    // 调用 cleanup 清除
+    cleanup(effectFn)
+    activeEffect = effectFn
+    // 在调用前将当前副作用压入栈
+    effectStack.push(activeEffect)
+    fn()
+    // 执行完后出栈
+    effectStack.pop()
+    // 将 activeEffect 还原之前外层的值
+    activeEffect = effectStack[effectStack.length - 1]
+  }
+  effectFn.deps = []
+  effectFn()
+}
+
+function cleanup(effectFn) {
+  for (let i = 0; i < effectFn.deps.length; i++) {
+    const dep = effectFn.deps[i]
+    dep.delete(effectFn)
+  }
+  // 最后重置 effectFn.deps 数组
+  effectFn.deps.length = 0
+}
+
+const obj = new Proxy(data, {
+  get(target, key) {
+    track(target, key)
+    return target[key]
+  },
+  set(target, key, newVal) {
+    target[key] = newVal
+    trigger(target, key)
+    return true
+  }
+})
+
+function track(target, key) {
+  if (!activeEffect) return
+  let depsMap = bucket.get(target)
+  if (!depsMap) {
+    bucket.set(target, (depsMap = new Map()))
+  }
+  let deps = depsMap.get(key)
+  if (!deps) {
+    depsMap.set(key, (deps = new Set()))
+  }
+  deps.add(activeEffect)
+  activeEffect.deps.push(deps)
+}
+
+function trigger(target, key) {
+  const depsMap = bucket.get(target)
+  if (!depsMap) return 
+  const effects = depsMap.get(key)
+  // 为了避免 调用副作用函数前清除 Set 的某一项后 再有调用副作用函数后的新增 Set 造成的调用循环问题
+  const effectsToRun = new Set(effects)
+  console.log('this key =>', key, effectsToRun)
+  effectsToRun && effectsToRun.forEach(fn => fn())
+}
+
+let temp1, temp2
+effect(() => {
+  console.log('effectFn1 run!')
+  effect(() => {
+    console.log('effectFn2 run!', temp2)
+    temp2 = obj.bar
+  })
+  temp1 = obj.foo
+})
+
+
+setTimeout(() => {
+  // obj.foo 重新执行导致内部 effect 再次执行 而 const effectFn = () => 每次都是新的函数，所以这里 obj.bar 对应的回调会有两个
+  obj.foo = false
+  setTimeout(() => {
+    // 这里同理，那么 obj.bar 会有 3 个回调函数 obj.bar 修改一次，调用3次回调函数
+    obj.foo = true
+    obj.bar = 5
+  }, 100)
+}, 1000)

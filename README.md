@@ -110,5 +110,35 @@ function delayResult(value, delay) {
 }
 ```
 解决：暴露一个时机，在回调函数执行之前，有限执行用户通过 onInvalidate 注册的过期回调，这样，用户就有机会在过期回调中将上一次的副作用标记为“过期”，解决竞态问题
+## 遇到的问题
+### effect 外 track 问题
+在 prac-22_5_4 练习中一步步写的时候 发现下面 console.log() 仍然会执行 3 次，我一度认为是我写错了还是哪里顺序搞错了，但是 prac-22_5_3 比较全的代码中并没有出现这个问题啊。
+```js
+effect(
+  () => {
+    const name = obj.ok ? obj.bar : 'not set'
+    console.log('name:', name)
+  }
+) 
+
+obj.ok = false
+obj.bar ++
+```
+后来发现是 `obj.bar++` 中再次调用了 obj.bar 造成 track，而此时 activeEffect 仍然是上面那个 effect 函数，而比较全的代码中使用了栈结构，所以在 effect 外 track 是直接在第一行结束返回
+### effectFn 重复调用问题
+同样是 prac-22_5_4 遇到的问题。发现最后 effect2 run 打印了两次，似乎是内部 effect 中的回调函数没有去重。仔细一看问题出在effect 函数体中，每次调用 effect 即使传入的回调函数 fn 是一样的，但是 `const effectFn = () =>` 却一直是不同的函数，所以没有去重。所以当外部 effectFn 重新执行导致内部 effect 重新执行的话，那么对应内部响应式数据对应的 effectFn 就有两个
+```js
+let temp1, temp2
+effect(() => {
+  console.log('effect1 run')
+  effect(() => {
+    console.log('effect2 run', temp2)
+    temp2 = obj.bar
+  })
+  temp1 = obj.foo
+})
+obj.foo = 2
+obj.bar = 2
+```
 ## 参考
 《Vue.js 设计与实现》

@@ -110,12 +110,12 @@ function trigger(target, key) {
 }
 
 // demo: cleanup 
-// effect(() => {
-//   const name = obj.ok ? obj.bar : 'not'
-//   console.log('changed', name)
-// })
-// obj.ok = false
-// obj.bar = 9
+effect(() => {
+  const name = obj.ok ? obj.bar : 'not'
+  console.log('changed', name)
+})
+obj.ok = false
+obj.bar++
 
 // demo: stack
 // let temp1, temp2
@@ -156,20 +156,20 @@ function trigger(target, key) {
 
 // demo: 批量更新
 
-effect(
-  () => {
-    console.log(obj.foo)
-  },
-  {
-    scheduler(fn) {
-      jobQueue.add(fn)
-      flushJob()
-    }
-  }
-)
-obj.foo++
-obj.foo++
-obj.foo++
+// effect(
+//   () => {
+//     console.log(obj.foo)
+//   },
+//   {
+//     scheduler(fn) {
+//       jobQueue.add(fn)
+//       flushJob()
+//     }
+//   }
+// )
+// obj.foo++
+// obj.foo++
+// obj.foo++
 
 
 
