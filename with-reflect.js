@@ -45,11 +45,19 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0
 }
 
-function reactive(data) {
+function createReactive(data, isShallow = false) {
   return new Proxy(data, {
     get(target, key, receiver) {
       track(target, key)
-      return Reflect.get(target, key, receiver)
+      const res = Reflect.get(target, key, receiver)
+      if (isShallow) {
+        return res
+      }
+      if (typeof res === 'object' && res !== null) {
+        // 递归包装响应式数据
+        return reactive(res)
+      }
+      return res 
     },
     set(target, key, newVal, receiver) {
       // 先取旧值
@@ -62,6 +70,14 @@ function reactive(data) {
       return res
     },
   })
+}
+
+function reactive(data) {
+  return createReactive(data)
+}
+
+function shallowReactive(data) {
+  return createReactive(data, true)
 }
 
 const obj = reactive(data)
