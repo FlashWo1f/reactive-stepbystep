@@ -45,20 +45,29 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0
 }
 
-const obj = new Proxy(data, {
-  get(target, key, receiver) {
-    track(target, key)
-    return Reflect.get(target, key, receiver)
-  },
-  set(target, key, newVal, receiver) {
-    const res = Reflect.set(target, key, newVal, receiver)
-    trigger(target, key)
-    return res
-  },
-})
+function reactive(data) {
+  return new Proxy(data, {
+    get(target, key, receiver) {
+      track(target, key)
+      return Reflect.get(target, key, receiver)
+    },
+    set(target, key, newVal, receiver) {
+      // 先取旧值
+      const oldVal = target[key]
+      const res = Reflect.set(target, key, newVal, receiver)
+      // 比较新旧值
+      if (oldVal !== newVal && (oldVal === oldVal || newVal === newVal)) {
+        trigger(target, key)
+      }
+      return res
+    },
+  })
+}
+
+const obj = reactive(data)
 
 function track(target, key) {
-  if (!activeEffect) return 
+  if (!activeEffect) return
   let depsMap = bucket.get(target)
   if (!depsMap) {
     bucket.set(target, (depsMap = new Map()))
@@ -73,7 +82,7 @@ function track(target, key) {
 
 function trigger(target, key) {
   const depsMap = bucket.get(target)
-  if (!depsMap) return 
+  if (!depsMap) return
   const effects = depsMap.get(key)
   // 为了避免 调用副作用函数前清除 Set 的某一项后 再有调用副作用函数后的新增 Set 造成的调用循环问题
   const effectsToRun = new Set()
