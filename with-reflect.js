@@ -45,21 +45,29 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0
 }
 
-function createReactive(data, isShallow = false) {
+function createReactive(data, isShallow = false, isReadonly = false) {
   return new Proxy(data, {
     get(target, key, receiver) {
-      track(target, key)
+      // 非只读才需要建立响应联系
+      if (!isReadonly) {
+        track(target, key)
+      }
       const res = Reflect.get(target, key, receiver)
       if (isShallow) {
         return res
       }
       if (typeof res === 'object' && res !== null) {
         // 递归包装响应式数据
-        return reactive(res)
+        return isReadonly ? readonly(res) : reactive(res)
       }
       return res 
     },
     set(target, key, newVal, receiver) {
+      // 只读属性在 set & deleteProperty 时都要警告且中断
+      if (isReadonly) {
+        console.warn(`属性 ${key} 是只读的`)
+        return true
+      }
       // 先取旧值
       const oldVal = target[key]
       const res = Reflect.set(target, key, newVal, receiver)
@@ -78,6 +86,14 @@ function reactive(data) {
 
 function shallowReactive(data) {
   return createReactive(data, true)
+}
+
+function readonly(obj) {
+  return createReactive(obj, false, true)
+}
+
+function shallowReadonly(obj) {
+  return createReactive(obj, true /* shallow */, true)
 }
 
 const obj = reactive(data)

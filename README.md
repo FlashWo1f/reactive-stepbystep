@@ -140,5 +140,7 @@ effect(() => {
 obj.foo = 2
 obj.bar = 2
 ```
+### reactive && shallowReactive
+### readonly && shallowReadonly
 ## 参考
 《Vue.js 设计与实现》
