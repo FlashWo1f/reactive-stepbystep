@@ -273,7 +273,10 @@ watch(
 const arr = reactive(['foo'])
 
 effect(() => {
-  console.log('arr', arr[0])
+  console.log('arr', arr.push(1))
+})
+effect(() => {
+  console.log('arr', arr.push(1))
 })
 
-arr.length = 0
+// arr.length = 0
