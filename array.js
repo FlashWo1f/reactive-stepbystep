@@ -3,6 +3,21 @@ const bucket = new WeakMap()
 let activeEffect
 const effectStack = []
 
+const arrayInstrumentations = {}
+// 一个标记变量，代表是否进行追踪
+let shouldTrack = true
+;['push', 'pop', 'shift', 'unshift', 'splice'].forEach(method => {
+  const originMethod = Array.prototype[method]
+  // 重写
+  arrayInstrumentations[method] = function (...args) {
+    // 调用前禁止追踪
+    shouldTrack = false
+    let res = originMethod.apply(this, args)
+    shouldTrack = true
+    return res
+  }
+})
+
 const data = {
   foo: 1,
   bar: 2,
@@ -48,6 +63,13 @@ function cleanup(effectFn) {
 function createReactive(data, isShallow = false, isReadonly = false) {
   return new Proxy(data, {
     get(target, key, receiver) {
+
+      // 如果操作的目标对象是数组，并且 key 存在于 arrayInstrumentations 上
+      // 那么返回定义在 arrayInstrumentations 上的值  -- 数组方法
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver)
+      }
+
       // 非只读才需要建立响应联系
       if (!isReadonly) {
         track(target, key)
@@ -102,7 +124,8 @@ function shallowReadonly(obj) {
 const obj = reactive(data)
 
 function track(target, key) {
-  if (!activeEffect) return
+  // 当禁止追踪时，直接返回
+  if (!activeEffect || !shouldTrack) return
   let depsMap = bucket.get(target)
   if (!depsMap) {
     bucket.set(target, (depsMap = new Map()))
